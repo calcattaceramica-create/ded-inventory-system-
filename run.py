@@ -38,7 +38,7 @@ def init_database():
             print("✅ Database tables created successfully!")
 
             # Initialize default data if database is empty
-            from app.models import Company, Branch, Role, User, Unit, Warehouse, Account
+            from app.models import Company, Branch, Role, User, Unit, Warehouse, Account, Permission
 
             if not Company.query.first():
                 # Create default company
@@ -64,10 +64,91 @@ def init_database():
                 )
                 db.session.add(branch)
 
+                # Create default permissions
+                permissions = [
+                    # Dashboard
+                    Permission(name='dashboard.view', name_ar='عرض لوحة التحكم', module='main'),
+
+                    # Inventory
+                    Permission(name='inventory.view', name_ar='عرض المخزون', module='inventory'),
+                    Permission(name='inventory.stock.view', name_ar='عرض المخزون', module='inventory'),
+                    Permission(name='inventory.stock.add', name_ar='إضافة مخزون', module='inventory'),
+                    Permission(name='inventory.stock.edit', name_ar='تعديل مخزون', module='inventory'),
+                    Permission(name='inventory.stock.delete', name_ar='حذف مخزون', module='inventory'),
+                    Permission(name='inventory.products.view', name_ar='عرض المنتجات', module='inventory'),
+                    Permission(name='inventory.products.add', name_ar='إضافة منتج', module='inventory'),
+                    Permission(name='inventory.products.edit', name_ar='تعديل منتج', module='inventory'),
+                    Permission(name='inventory.products.delete', name_ar='حذف منتج', module='inventory'),
+                    Permission(name='inventory.damaged.view', name_ar='عرض المخزون التالف', module='inventory'),
+                    Permission(name='inventory.damaged.add', name_ar='إضافة مخزون تالف', module='inventory'),
+                    Permission(name='inventory.damaged.edit', name_ar='تعديل مخزون تالف', module='inventory'),
+                    Permission(name='inventory.damaged.delete', name_ar='حذف مخزون تالف', module='inventory'),
+
+                    # Sales
+                    Permission(name='sales.view', name_ar='عرض المبيعات', module='sales'),
+                    Permission(name='sales.invoices.view', name_ar='عرض فواتير المبيعات', module='sales'),
+                    Permission(name='sales.invoices.add', name_ar='إضافة فاتورة مبيعات', module='sales'),
+                    Permission(name='sales.invoices.edit', name_ar='تعديل فاتورة مبيعات', module='sales'),
+                    Permission(name='sales.invoices.delete', name_ar='حذف فاتورة مبيعات', module='sales'),
+                    Permission(name='sales.customers.view', name_ar='عرض العملاء', module='sales'),
+                    Permission(name='sales.customers.add', name_ar='إضافة عميل', module='sales'),
+                    Permission(name='sales.customers.edit', name_ar='تعديل عميل', module='sales'),
+                    Permission(name='sales.customers.delete', name_ar='حذف عميل', module='sales'),
+
+                    # Purchases
+                    Permission(name='purchases.view', name_ar='عرض المشتريات', module='purchases'),
+                    Permission(name='purchases.invoices.view', name_ar='عرض فواتير المشتريات', module='purchases'),
+                    Permission(name='purchases.invoices.add', name_ar='إضافة فاتورة مشتريات', module='purchases'),
+                    Permission(name='purchases.invoices.edit', name_ar='تعديل فاتورة مشتريات', module='purchases'),
+                    Permission(name='purchases.invoices.delete', name_ar='حذف فاتورة مشتريات', module='purchases'),
+                    Permission(name='purchases.suppliers.view', name_ar='عرض الموردين', module='purchases'),
+                    Permission(name='purchases.suppliers.add', name_ar='إضافة مورد', module='purchases'),
+                    Permission(name='purchases.suppliers.edit', name_ar='تعديل مورد', module='purchases'),
+                    Permission(name='purchases.suppliers.delete', name_ar='حذف مورد', module='purchases'),
+
+                    # Accounting
+                    Permission(name='accounting.view', name_ar='عرض المحاسبة', module='accounting'),
+                    Permission(name='accounting.accounts.view', name_ar='عرض الحسابات', module='accounting'),
+                    Permission(name='accounting.accounts.add', name_ar='إضافة حساب', module='accounting'),
+                    Permission(name='accounting.accounts.edit', name_ar='تعديل حساب', module='accounting'),
+                    Permission(name='accounting.accounts.delete', name_ar='حذف حساب', module='accounting'),
+                    Permission(name='accounting.entries.view', name_ar='عرض القيود', module='accounting'),
+                    Permission(name='accounting.entries.add', name_ar='إضافة قيد', module='accounting'),
+                    Permission(name='accounting.entries.edit', name_ar='تعديل قيد', module='accounting'),
+                    Permission(name='accounting.entries.delete', name_ar='حذف قيد', module='accounting'),
+
+                    # Reports
+                    Permission(name='reports.view', name_ar='عرض التقارير', module='reports'),
+                    Permission(name='reports.sales', name_ar='تقارير المبيعات', module='reports'),
+                    Permission(name='reports.purchases', name_ar='تقارير المشتريات', module='reports'),
+                    Permission(name='reports.inventory', name_ar='تقارير المخزون', module='reports'),
+                    Permission(name='reports.accounting', name_ar='تقارير المحاسبة', module='reports'),
+
+                    # Settings
+                    Permission(name='settings.view', name_ar='عرض الإعدادات', module='settings'),
+                    Permission(name='settings.company.edit', name_ar='تعديل بيانات الشركة', module='settings'),
+                    Permission(name='settings.branches.manage', name_ar='إدارة الفروع', module='settings'),
+                    Permission(name='settings.users.manage', name_ar='إدارة المستخدمين', module='settings'),
+                    Permission(name='settings.roles.manage', name_ar='إدارة الأدوار', module='settings'),
+                    Permission(name='settings.permissions.manage', name_ar='إدارة الصلاحيات', module='settings'),
+                ]
+                db.session.add_all(permissions)
+                db.session.flush()  # Flush to get permission IDs
+
                 # Create default roles
                 admin_role = Role(name='admin', name_ar='مدير النظام', description='Full system access')
+                admin_role.permissions = permissions  # Admin gets all permissions
+
                 manager_role = Role(name='manager', name_ar='مدير', description='Manager access')
+                # Manager gets most permissions except settings
+                manager_permissions = [p for p in permissions if not p.module == 'settings' or p.name == 'settings.view']
+                manager_role.permissions = manager_permissions
+
                 user_role = Role(name='user', name_ar='مستخدم', description='Basic user access')
+                # User gets only view permissions
+                user_permissions = [p for p in permissions if '.view' in p.name]
+                user_role.permissions = user_permissions
+
                 db.session.add_all([admin_role, manager_role, user_role])
 
                 # Create default admin user
