@@ -2,7 +2,11 @@ import os
 from app import create_app, db
 from app.models import *
 
-app = create_app(os.getenv('FLASK_ENV') or 'default')
+# Use production config on Render, development otherwise
+config_name = os.getenv('FLASK_ENV', 'development')
+if config_name == 'production':
+    config_name = 'production'
+app = create_app(config_name)
 
 @app.shell_context_processor
 def make_shell_context():
